@@ -72,6 +72,9 @@ struct explist {
 	} u;
 };
 
+typedef struct table Table;
+struct table {char *id; int val; Table *tail};
+
 Stm* mk_compound_stm(Stm* left, Stm* right);
 Stm* mk_assign_stm(char* id, Exp* right);
 Stm* mk_print_stm(ExpList* exps);
@@ -83,6 +86,25 @@ Exp* mk_eseq_exp(Stm* stm, Exp* exp);
 
 ExpList* mk_pair_explist(Exp* head, ExpList* tail);
 ExpList* mk_last_explist(Exp* last);
+
+/* retarded table impl */
+Table *update_table(Table *t, char *key, int val)
+{
+	Table *t2;
+	for (t2 = t; t2; t2 = t2->tail) {
+		if (!strcmp(t->id, key)) {
+			t->val = val;
+			return t;
+		}
+	}
+	t2 = malloc(sizeof(*t2));
+	t2->id = key;
+	t2->val = val;
+	t2->tail = t;
+	return t2;
+}
+
+//int *table_lookup(Table *t, char)
 
 static int max(int a, int b)
 {
@@ -126,6 +148,17 @@ static int maxargs(Stm* s)
 		m = max(maxargs_exp(e->u.pair.head), m);
 	}
 	return max(m, c);
+}
+
+void interp_exp(Exp *e)
+{
+	
+}
+
+void interp_stm(Stm *s)
+{
+
+
 }
 
 int main(void)
