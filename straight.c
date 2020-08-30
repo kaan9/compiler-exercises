@@ -202,7 +202,7 @@ int main(void)
 							    mk_id_exp("a"), SUB,
 							    mk_num_exp(1))))),
 					    mk_binop_exp(mk_num_exp(10), MUL,
-							 mk_id_exp("b")))),
+							 mk_id_exp("a")))),
 			mk_print_stm(mk_last_explist(mk_id_exp("b")))));
 	/* printf("%d\n", maxargs(prog)); */
 	interp_stm(prog, &t);
