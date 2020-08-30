@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct stm Stm;
 typedef struct exp Exp;
@@ -73,7 +74,7 @@ struct explist {
 };
 
 typedef struct table Table;
-struct table {char *id; int val; Table *tail};
+struct table {char *id; int val; Table *tail;};
 
 Table *update_table(Table *t, char *key, int val);
 int table_lookup(Table *t, char *key);
@@ -90,6 +91,8 @@ Exp* mk_eseq_exp(Stm* stm, Exp* exp);
 ExpList* mk_pair_explist(Exp* head, ExpList* tail);
 ExpList* mk_last_explist(Exp* last);
 
+int interp_exp(Exp *e, Table **t);
+void interp_stm(Stm *s, Table **t);
 
 static int maxargs_exp(Exp* e);
 static int maxargs(Stm* s);
@@ -135,19 +138,58 @@ static int maxargs(Stm* s)
 	return max(m, c);
 }
 
-Table *interp_exp(Exp *e)
+int interp_exp(Exp *e, Table **t)
 {
-	
+	switch(e->type) {
+	case ID_EXP:
+		return table_lookup(*t, e->u.id);
+	case NUM_EXP:
+		return e->u.num;
+	case BINOP_EXP:
+		switch(e->u.binop.op) {
+		case ADD:
+			return interp_exp(e->u.binop.left, t) + interp_exp(e->u.binop.right, t);
+		case SUB:
+			return interp_exp(e->u.binop.left, t) - interp_exp(e->u.binop.right, t);
+		case MUL:
+			return interp_exp(e->u.binop.left, t) * interp_exp(e->u.binop.right, t);
+		case DIV:
+			return interp_exp(e->u.binop.left, t) / interp_exp(e->u.binop.right, t);
+		}
+	case ESEQ_EXP:
+		interp_stm(e->u.eseq.stm, t);
+		return interp_exp(e->u.eseq.exp, t);
+	}
+	return 0;
 }
 
-Table *interp_stm(Stm *s)
+/* executes prints and modifies table given to it */
+void interp_stm(Stm *s, Table **t)
 {
-
-
+	int a;
+	ExpList *e;
+	switch(s->type) {
+	case COMPOUND_STM:
+		interp_stm(s->u.compound.left, t);
+		interp_stm(s->u.compound.right, t);
+		break;
+	case ASSIGN_STM:
+		a = interp_exp(s->u.assign.right, t);
+		*t = update_table(*t, s->u.assign.id, a);
+		break;
+	case PRINT_STM:
+		for (e = s->u.print.exps; e->type == PAIR_EXP_LIST; e = e->u.pair.tail) {
+			a = interp_exp(e->u.pair.head, t);
+			printf("%d ", a);
+		}
+		a = interp_exp(e->u.last, t);
+		printf("%d\n", a);
+	}
 }
 
 int main(void)
 {
+	Table *t = NULL;
 	Stm* prog = mk_compound_stm(
 		mk_assign_stm("a",
 			      mk_binop_exp(mk_num_exp(5), ADD, mk_num_exp(3))),
@@ -162,7 +204,10 @@ int main(void)
 					    mk_binop_exp(mk_num_exp(10), MUL,
 							 mk_id_exp("b")))),
 			mk_print_stm(mk_last_explist(mk_id_exp("b")))));
-	printf("%d\n", maxargs(prog));
+	/* printf("%d\n", maxargs(prog)); */
+	interp_stm(prog, &t);
+	for (; t; t = t->tail)
+		printf("%s: %d\n", t->id, t->val);
 	return 0;
 }
 
