@@ -75,6 +75,9 @@ struct explist {
 typedef struct table Table;
 struct table {char *id; int val; Table *tail};
 
+Table *update_table(Table *t, char *key, int val);
+int table_lookup(Table *t, char *key);
+
 Stm* mk_compound_stm(Stm* left, Stm* right);
 Stm* mk_assign_stm(char* id, Exp* right);
 Stm* mk_print_stm(ExpList* exps);
@@ -87,32 +90,14 @@ Exp* mk_eseq_exp(Stm* stm, Exp* exp);
 ExpList* mk_pair_explist(Exp* head, ExpList* tail);
 ExpList* mk_last_explist(Exp* last);
 
-/* retarded table impl */
-Table *update_table(Table *t, char *key, int val)
-{
-	Table *t2;
-	for (t2 = t; t2; t2 = t2->tail) {
-		if (!strcmp(t->id, key)) {
-			t->val = val;
-			return t;
-		}
-	}
-	t2 = malloc(sizeof(*t2));
-	t2->id = key;
-	t2->val = val;
-	t2->tail = t;
-	return t2;
-}
 
-//int *table_lookup(Table *t, char)
+static int maxargs_exp(Exp* e);
+static int maxargs(Stm* s);
 
 static int max(int a, int b)
 {
 	return a > b ? a : b;
 }
-
-static int maxargs_exp(Exp* e);
-static int maxargs(Stm* s);
 
 static int maxargs_exp(Exp* e)
 {
@@ -150,12 +135,12 @@ static int maxargs(Stm* s)
 	return max(m, c);
 }
 
-void interp_exp(Exp *e)
+Table *interp_exp(Exp *e)
 {
 	
 }
 
-void interp_stm(Stm *s)
+Table *interp_stm(Stm *s)
 {
 
 
@@ -257,4 +242,31 @@ ExpList* mk_last_explist(Exp* last)
 	e->type = LAST_EXP_LIST;
 	e->u.last = last;
 	return e;
+}
+
+/* retarded table impl */
+Table *update_table(Table *t, char *key, int val)
+{
+	Table *t2;
+	for (t2 = t; t2; t2 = t2->tail) {
+		if (!strcmp(t->id, key)) {
+			t->val = val;
+			return t;
+		}
+	}
+	t2 = malloc(sizeof(*t2));
+	t2->id = key;
+	t2->val = val;
+	t2->tail = t;
+	return t2;
+}
+
+int table_lookup(Table *t, char *key)
+{
+	for (; t; t = t->tail) {
+		if (!strcmp(t->id, key)) {
+			return t->val;
+		}
+	}
+	return 0;
 }
