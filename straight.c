@@ -76,7 +76,7 @@ struct explist {
 typedef struct table Table;
 struct table {char *id; int val; Table *tail;};
 
-Table *update_table(Table *t, char *key, int val);
+void update_table(Table **t, char *key, int val);
 int table_lookup(Table *t, char *key);
 
 Stm* mk_compound_stm(Stm* left, Stm* right);
@@ -175,7 +175,7 @@ void interp_stm(Stm *s, Table **t)
 		break;
 	case ASSIGN_STM:
 		a = interp_exp(s->u.assign.right, t);
-		*t = update_table(*t, s->u.assign.id, a);
+		update_table(t, s->u.assign.id, a);
 		break;
 	case PRINT_STM:
 		for (e = s->u.print.exps; e->type == PAIR_EXP_LIST; e = e->u.pair.tail) {
@@ -290,20 +290,21 @@ ExpList* mk_last_explist(Exp* last)
 }
 
 /* retarded table impl */
-Table *update_table(Table *t, char *key, int val)
+void update_table(Table **table, char *key, int val)
 {
-	Table *t2;
+	Table *t = *table, *t2;
 	for (t2 = t; t2; t2 = t2->tail) {
 		if (!strcmp(t->id, key)) {
 			t->val = val;
-			return t;
+			*table = t;
+			return;
 		}
 	}
 	t2 = malloc(sizeof(*t2));
 	t2->id = key;
 	t2->val = val;
 	t2->tail = t;
-	return t2;
+	*table = t2;
 }
 
 int table_lookup(Table *t, char *key)
